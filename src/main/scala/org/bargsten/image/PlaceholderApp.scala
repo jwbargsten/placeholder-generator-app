@@ -3,7 +3,7 @@ package org.bargsten.image
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ContentType, HttpEntity, MediaTypes}
+import akka.http.scaladsl.model.{ContentType, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 
@@ -11,11 +11,8 @@ import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
 import scala.util.{Failure, Success}
 
-//#main-class
 object PlaceholderApp {
-  //#start-http-server
   private def startHttpServer(routes: Route)(implicit system: ActorSystem[_]): Unit = {
-    // Akka HTTP still needs a classic ActorSystem to start
     import system.executionContext
 
     val futureBinding = Http().newServerAt("localhost", 8080).bind(routes)
@@ -29,32 +26,28 @@ object PlaceholderApp {
     }
   }
 
-  //#start-http-server
   def main(args: Array[String]): Unit = {
-    //#server-bootstrapping
-    val rootBehavior = Behaviors.setup[Nothing] { context =>
-      //      val userRegistryActor = context.spawn(UserRegistry(), "UserRegistryActor")
-      //      context.watch(userRegistryActor)
-
-      //      val routes = new UserRoutes(userRegistryActor)(context.system)
-      val downRoutes: Route = pathPrefix("down" / Segment / IntNumber / IntNumber) { (_, w, h) =>
+    val rootBehavior = Behaviors.setup[Nothing] { ctx =>
+      val routes: Route = pathPrefix(IntNumber / IntNumber) { (w, h) =>
         get {
-          complete({
-            val img = new Placeholder(w, h).create
+          if (w < 10000 && h < 10000) {
+            complete({
+              val img = new Placeholder(w, h).create
+              val out = new ByteArrayOutputStream()
+              ImageIO.write(img, "png", out)
 
-            val out = new ByteArrayOutputStream()
-            ImageIO.write(img, "png", out)
-            HttpEntity(ContentType(MediaTypes.`image/png`), out.toByteArray)
+              HttpEntity(ContentType(MediaTypes.`image/png`), out.toByteArray)
+            }
+            )
+          } else {
+            complete(StatusCodes.BadRequest, HttpEntity("requested dimensions invalid"))
           }
-          )
         }
       }
-      startHttpServer(downRoutes)(context.system)
+      startHttpServer(routes)(ctx.system)
 
       Behaviors.empty
     }
-    val system = ActorSystem[Nothing](rootBehavior, "HelloAkkaHttpServer")
-    //#server-bootstrapping
+    ActorSystem[Nothing](rootBehavior, "PlaceholderHttpServer")
   }
 }
-//#main-class

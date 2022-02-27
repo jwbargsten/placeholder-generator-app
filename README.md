@@ -1,7 +1,5 @@
 # Placeholder Generator App
 
-start with `sbt reStart`
-
-stop with `sbt reStop`
+start with `sbt run`
 
 test with `http://localhost:8080/300/400`

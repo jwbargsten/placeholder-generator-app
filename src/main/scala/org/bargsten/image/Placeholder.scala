@@ -1,9 +1,13 @@
 package org.bargsten.image
 
-import Placeholder.{center, fontSizes, selectFont}
+import org.bargsten.image.Placeholder.center
+import org.bargsten.image.Placeholder.fontSizes
+import org.bargsten.image.Placeholder.selectFont
 
+import java.awt.Color
+import java.awt.Font
+import java.awt.RenderingHints
 import java.awt.image.BufferedImage
-import java.awt.{Color, Font, RenderingHints}
 
 class Placeholder(width: Int, height: Int) {
 
@@ -59,25 +63,26 @@ object Placeholder {
   val fontSizes = List(6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 21, 24, 36, 48, 60, 72)
 
   def selectFont(
-                  imgDims: Dimensions,
-                  fontSizes: List[Int],
-                  text: String
-                ): Option[(Font, Dimensions, Int)] = {
+      imgDims: Dimensions,
+      fontSizes: List[Int],
+      text: String
+  ): Option[(Font, Dimensions, Int)] = {
     val img = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB)
     val g2d = img.createGraphics
-    val res = fontSizes.reverse.view
-      .map { size =>
-        val font = new Font("SansSerif", Font.PLAIN, size)
-        g2d.setFont(font)
-        val fm = g2d.getFontMetrics
+    val res =
+      try fontSizes.reverse.view
+        .map { size =>
+          val font = new Font("SansSerif", Font.PLAIN, size)
+          g2d.setFont(font)
+          val fm = g2d.getFontMetrics
 
-        (font, Dimensions(fm.stringWidth(text), fm.getHeight), fm.getAscent)
-      }
-      .find { case (_, fDims, _) =>
-        fDims.width < imgDims.width && fDims.height < imgDims.height
-      }
+          (font, Dimensions(fm.stringWidth(text), fm.getHeight), fm.getAscent)
+        }
+        .find { case (_, fDims, _) => fDims.width < imgDims.width && fDims.height < imgDims.height }
+      // silence everything
+      catch { case _: Throwable => None }
+      finally g2d.dispose()
 
-    g2d.dispose()
     res
   }
 

@@ -31,14 +31,13 @@ object PlaceholderApp {
       val routes: Route = pathPrefix(IntNumber / IntNumber) { (w, h) =>
         get {
           if (w < 10000 && h < 10000) {
-            complete({
+            complete {
               val img = new Placeholder(w, h).create
               val out = new ByteArrayOutputStream()
               ImageIO.write(img, "png", out)
 
               HttpEntity(ContentType(MediaTypes.`image/png`), out.toByteArray)
             }
-            )
           } else {
             complete(StatusCodes.BadRequest, HttpEntity("requested dimensions invalid"))
           }
